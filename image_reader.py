@@ -1,23 +1,41 @@
 import cv2
+import numpy as np
+from tensorflow.keras.models import load_model
 
-pytesseract.pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+model = load_model("digit_recognition_model.h5")
 
-# Wczytanie obrazu
-image = cv2.imread("sudoku.jpg")
+def preprocess_cell(cell):
+    cell = cv2.resize(cell, (28, 28))  # Skalowanie do 28x28
+    cell = cell / 255.0  # Normalizacja
+    return cell.reshape(1, 28, 28, 1)  # Dopasowanie do CNN
 
-# Konwersja do odcieni szarości
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+def extract_digits(image_path):
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    
+    if image is None:
+        raise ValueError(f"Nie udało się załadować obrazu z ścieżki: {image_path}")
+    
+    image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
 
-# Rozmycie Gaussa (usuwa szumy)
-blurred = cv2.GaussianBlur(gray, (5,5), 0)
+    cv2.imshow("Przetworzony obraz", image)
+    
+    cells = []
+    cell_size = image.shape[0] // 9  # Podział obrazu na 9x9
 
-# Progowanie (thresholding) - zamieniamy obraz na czarno-biały
-_, thresh = cv2.threshold(blurred, 150, 255, cv2.THRESH_BINARY_INV)
+    for y in range(9):
+        row = []
+        for x in range(9):
+            x_start, y_start = x * cell_size, y * cell_size
+            x_end, y_end = (x + 1) * cell_size, (y + 1) * cell_size
 
-# Podgląd wyników
-cv2.imshow("Oryginał", image)
-cv2.imshow("Szarość", gray)
-cv2.imshow("Rozmycie", blurred)
-cv2.imshow("Progowanie", thresh)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+            cell = image[y_start:y_end, x_start:x_end]
+            processed = preprocess_cell(cell)
+
+            # Przewidujemy cyfrę modelem CNN
+            prediction = model.predict(processed)
+            digit = np.argmax(prediction)  # Pobieramy najpewniejszą predykcję
+
+            row.append(digit)
+        cells.append(row)
+
+    return np.array(cells)
