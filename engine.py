@@ -1,8 +1,8 @@
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
-from tensorflow.keras.datasets import mnist
+from keras.api.models import Sequential
+from keras.api.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from keras.api.datasets import mnist
 import numpy as np
 
 # 1️⃣ Wczytanie i przygotowanie danych MNIST (zdjęcia cyfr)
